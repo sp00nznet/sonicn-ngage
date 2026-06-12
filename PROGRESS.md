@@ -11,13 +11,31 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 2 | Import table dumped → exact Symbian symbol list (233 / 11 DLLs) | ✅ done |
 | 3 | Function recovery over the code section (2,621 funcs) | ✅ done (IDA) |
 | 4 | First function lifted ARM→C and round-trip verified | ✅ done |
-| 5 | HLE bring-up set (heap, file read, framebuffer present, key input) | ⬜ |
+| 4b | Control flow + stack + writeback → whole functions lift (97.8% / 99.94%) | ✅ done |
+| 5 | HLE bring-up set (heap, file read, framebuffer present, key input) | ⬜ (unblocked) |
 | 6 | **First frame on screen** | ⬜ |
 | 7 | Controllable Sonic | ⬜ |
 | 8 | Sound | ⬜ |
 | 9 | Playable start→first level clear | ⬜ |
 
 ## Log
+
+### 2026-06-12 — Day 0 (cont.): whole functions lift; firmware in hand
+- Added **control flow** to the lifter: intra-function branches → labels/`goto`,
+  conditional branches → `if (cond) goto`, calls → `ngage_call()` dispatch, returns.
+  Plus PUSH/POP/LDM/STM, pre/post-index writeback, MUL/MLA/SMULL/UMULL, standalone
+  shifts, signed loads, and condition/`S`-suffix stripping.
+- **Whole-binary coverage: 97.8% of all 2,621 functions, 99.94% of 223,868
+  instructions, zero exceptions.** Residual 141 stubs = register-amount shifts.
+- Proof: SonicN's `memset` (`sub_100E76E4`) and the dispatch path both compile under
+  `clang -Wall` and **execute correctly** (fills N bytes, `r0` post-increments, the
+  `count==0`/`bxle` early-return works; `ngage_call` resolves via the table).
+- Firmware arrived: an EKA2L1 N-Gage (rh-4) drive with all 10 core Symbian DLLs
+  (`euser`/`efsrv`/`fbscli`/`bitgdi`/`cone`/`eikcore`/`avkon`/`apparc`/`estlib`/`ws32`)
+  and the S60v1 N-Gage ROM — so the **reference oracle** can boot SonicN and the **HLE
+  ordinal map** is now sourced directly. See `docs/ASSETS.md`.
+- **Next:** register-amount shifts to close the last 141; then HLE bring-up
+  (heap/file/framebuffer/input) toward first frame.
 
 ### 2026-06-12 — Day 0 (cont.): first ARM→C lift round-trips ✅
 - Built the lifter in [ngagerecomp](https://github.com/sp00nznet/ngagerecomp): `extract.py`
