@@ -27,6 +27,19 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 
 ## Log
 
+### 2026-06-12 — Day 0 (cont.): ConstructL COMPLETES; the game tick runs 🎉
+- Mapped `FBSCLI ord 156` = `CFbsBitmap::Load` (had mis-labeled it Connect). Implemented it
+  to set the bitmap up as EColor4K → the bitmap-load path stops crashing and **the control's
+  `ConstructL` runs to completion (`rc=0`)** and registers the **`CPeriodic` game-loop timer**.
+- Pumping the tick surfaced the need for **jump-table lowering**: `ldr pc,[pc,rN,lsl#2]`
+  switches were routed through dispatch with a stray `return` (skipping the epilogue → ABI
+  violation). Implemented proper lowering — read the constant target table from the image,
+  emit a C `switch` with local `goto`s. **85 tables across the binary**; also fixed the
+  conditional `bxne` indirect-call case.
+- Result: the whole app + control construction completes and **the game tick executes**,
+  now faulting on a null-deref deeper in the render path (HLE grind continues, inside real
+  game rendering). An **ABI-invariant check** (`-DNGAGE_ABI_CHECK`) drove all of this.
+
 ### 2026-06-12 — Day 0 (cont.): blew through the audio AO into control ConstructL
 - The active object was a **`CMdaAudioOutputStream`** (audio). Implemented it as an HLE
   object with a synthetic no-op vtable (`ngagerecomp` `hle/media.c`) → past the panic.
