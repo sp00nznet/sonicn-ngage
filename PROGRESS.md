@@ -17,13 +17,30 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 4e | Function registry + dispatch (game calls itself); EFSRV file reads | ✅ done |
 | 4f | Framebuffer pipeline: CFbsBitmap + DataAddress + present (45/233) | ✅ done |
 | 4g | Game code runs: image loader + virtual dispatch; NewApplication executes | ✅ done |
-| 5 | Walk app-framework chain → CPeriodic game loop → CCoeControl::Draw | 🟡 next |
+| 4h | App init chain traced (docs/BOOT-CHAIN.md); driving into ConstructL | ✅ done (66/233) |
+| 5 | Finish construction → CPeriodic tick renders a frame | 🟡 in progress |
 | 6 | **First frame on screen** | ⬜ |
 | 7 | Controllable Sonic | ⬜ |
 | 8 | Sound | ⬜ |
 | 9 | Playable start→first level clear | ⬜ |
 
 ## Log
+
+### 2026-06-12 — Day 0 (cont.): traced the app init chain, driving the bootstrap
+- **Mapped the full S60 startup** from the binary (IDA + running it) — see
+  `docs/BOOT-CHAIN.md`: NewApplication → CreateDocumentL → `CSonicNAppUi::ConstructL`
+  (sub_100163FC) → control `ConstructL` (sub_10016990, creates the window + the
+  **CPeriodic game-loop timer**) → the tick `sub_100170D8` → `sub_10017260` = the
+  game's update+render. Found the screen-rect plumbing and the 538 KB control state.
+- Built the machinery to drive it: `CPeriodic::NewL`/`Start` + a frame **pump**,
+  `ApplicationRect` (176×208), and the **descriptor constructors** (TPtr/TPtrC/TBuf —
+  the game builds these everywhere). **66/233 shims.**
+- Driving `ConstructL` now **executes into the control construction**. Added a 32-entry
+  call-trace ring to the dispatcher so each fault prints the last guest addresses — this
+  is how the frontier is located. Current wall: inside sub_10016990 on a buffer an
+  upstream stub hasn't filled. Bring-up from here is the usual crash → fix → repeat.
+- **Next:** keep walking the construction path to the first `CPeriodic` tick that
+  renders into the CFbsBitmap (the framebuffer pipeline downstream already works).
 
 ### 2026-06-12 — Day 0 (cont.): the game's own code runs 🎉
 - **First contact:** invoked the app's single export `NewApplication()` (@0x100163bc) —
