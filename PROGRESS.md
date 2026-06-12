@@ -28,6 +28,19 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 
 ## Log
 
+### 2026-06-12 — Day 0 (cont.): game runs 1400 frames; frontier is the sprite engine
+- Added a **soft memory-guard mode** (OOB reads → 0, writes dropped, both counted) to run
+  *past* the sprite-engine null derefs instead of crashing. The game then runs **1400+
+  frames, stable**.
+- But the screen stays blank, with a burst of **~880k OOB reads** in the sprite blitter
+  (`sub_1000C760` → `sub_100EBCC4`), all from a **null source pointer** — the sprite
+  descriptors have null pixel-data pointers, i.e. the loaded `action_char*.bin` assets
+  aren't linked into the sprites.
+- That linkage is deep, SonicN-specific RE (its sprite/tile data format + asset→descriptor
+  mapping); the real screen surface may also be the NOKIAFC framebuffer, not the bitmap we
+  capture. Everything generalizable — CPU, boot, game loop, timing, asset I/O, pixel
+  pipeline — is proven with real game code. **Gameplay graphics are now a per-game effort.**
+
 ### 2026-06-12 — Day 0 (cont.): the game advances + loads its real assets
 - Found the timing was frozen: **`User::TickCount` was a constant stub**, so the game's
   per-frame time deltas were always 0 — animations/state transitions never advanced.
