@@ -16,13 +16,29 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 4d | Heap allocator + new/delete + leave/cleanup-stack model | ✅ done |
 | 4e | Function registry + dispatch (game calls itself); EFSRV file reads | ✅ done |
 | 4f | Framebuffer pipeline: CFbsBitmap + DataAddress + present (45/233) | ✅ done |
-| 5 | S60 app bootstrap (active scheduler + CONE) → game's own Draw runs | 🟡 next |
+| 4g | Game code runs: image loader + virtual dispatch; NewApplication executes | ✅ done |
+| 5 | Walk app-framework chain → CPeriodic game loop → CCoeControl::Draw | 🟡 next |
 | 6 | **First frame on screen** | ⬜ |
 | 7 | Controllable Sonic | ⬜ |
 | 8 | Sound | ⬜ |
 | 9 | Playable start→first level clear | ⬜ |
 
 ## Log
+
+### 2026-06-12 — Day 0 (cont.): the game's own code runs 🎉
+- **First contact:** invoked the app's single export `NewApplication()` (@0x100163bc) —
+  SonicN's own (recompiled) code executed: `operator new` its app object, ran the ctor,
+  installed the vtable, returned a valid object at 0x10800008. Only 1 stubbed call, benign.
+- Two pieces unlocked it:
+  - **Image loader** (`image.c` + `gen_image.py` → `segments.bin`): loads the image's data
+    segments (vtables/const pools/jump tables) into guest memory — the lifted code reads
+    these by address. Without it the vtable read returned 0.
+  - **Virtual dispatch** (`ngage_vcall`): reads an object's vtable and calls the slot.
+- Drove the next step: **`CreateDocumentL` dispatches correctly through the vtable** (+0x10
+  → 0x100ed104). It lands on the framework thunk, so the real document/appui/control
+  override chain is the next trace.
+- **Next:** walk that chain + stand up the active scheduler and the game's `CPeriodic`
+  tick (its render loop) → `CCoeControl::Draw`, which feeds the (working) framebuffer.
 
 ### 2026-06-12 — Day 0 (cont.): pixels flow — the framebuffer pipeline works
 - Mapped SonicN's render path from its imports: it creates a **CFbsBitmap**, gets its
