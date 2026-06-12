@@ -17,14 +17,32 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 4e | Function registry + dispatch (game calls itself); EFSRV file reads | ✅ done |
 | 4f | Framebuffer pipeline: CFbsBitmap + DataAddress + present (45/233) | ✅ done |
 | 4g | Game code runs: image loader + virtual dispatch; NewApplication executes | ✅ done |
-| 4h | App init chain traced (docs/BOOT-CHAIN.md); driving into ConstructL | ✅ done (66/233) |
-| 5 | Finish construction → CPeriodic tick renders a frame | 🟡 in progress |
+| 4h | App init chain traced (docs/BOOT-CHAIN.md); driving into ConstructL | ✅ done |
+| 4i | Drive ConstructL deep: LDM bug fix, soft-float, descriptors, panic | ✅ done (88/233) |
+| 5 | Active-object/async machinery → construction completes → render | 🟡 in progress |
 | 6 | **First frame on screen** | ⬜ |
 | 7 | Controllable Sonic | ⬜ |
 | 8 | Sound | ⬜ |
 | 9 | Playable start→first level clear | ⬜ |
 
 ## Log
+
+### 2026-06-12 — Day 0 (cont.): driving ConstructL deep — found a real lifter bug
+- Ran `AppUi::ConstructL` under a memory-bounds guard. It surfaced a wild read at
+  `0x3FE00004`, which a 32-entry dispatch call-trace pinned to **a lifter bug**:
+  `ldm r9,{r9,r10}` loaded `r9` first, clobbering the base before the 2nd address —
+  so it read `[loaded_value+4]`. Fixed in the lifter (snapshot the base into a temp);
+  affects any binary, re-lifted the whole corpus.
+- Implemented the **soft-float / integer-divide runtime** (`hle/softfloat.c`, 22 libgcc
+  helpers — the constructor does double math) and the **descriptor constructors**.
+- Found a runaway recursion: **`User::Panic` was returning** (it's fatal in Symbian),
+  so the active-object retry loop spun forever → fixed Panic to unwind.
+- Result: ConstructL now runs deep (alloc → descriptors → sub-object construction →
+  float math) and **panics cleanly at the active-object state check**, unwinding via
+  `ngage_run`. **88/233 shims.** Frontier = the active-object/async machinery (stubbed
+  scheduler never advances `CActive` state) + the nested-`TRAP` hook.
+- **Next:** real `CActive` request/complete + `RTimer` firing + run loop so construction
+  completes and the `CPeriodic` tick renders.
 
 ### 2026-06-12 — Day 0 (cont.): traced the app init chain, driving the bootstrap
 - **Mapped the full S60 startup** from the binary (IDA + running it) — see
