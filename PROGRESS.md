@@ -11,14 +11,29 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 2 | Import table dumped → exact Symbian symbol list (233 / 11 DLLs) | ✅ done |
 | 3 | Function recovery over the code section (2,621 funcs) | ✅ done (IDA) |
 | 4 | First function lifted ARM→C and round-trip verified | ✅ done |
-| 4b | Control flow + stack + writeback → whole functions lift (97.8% / 99.94%) | ✅ done |
-| 5 | HLE bring-up set (heap, file read, framebuffer present, key input) | ⬜ (unblocked) |
+| 4b | Control flow + stack + writeback → whole functions lift | ✅ done (100% / compiles clean) |
+| 4c | HLE foundation: IAT dispatch + first shims (memcpy/memset/FillZ) | ✅ done (3/233) |
+| 5 | HLE bring-up set (heap, file read, framebuffer present, key input) | 🟡 in progress |
 | 6 | **First frame on screen** | ⬜ |
 | 7 | Controllable Sonic | ⬜ |
 | 8 | Sound | ⬜ |
 | 9 | Playable start→first level clear | ⬜ |
 
 ## Log
+
+### 2026-06-12 — Day 0 (cont.): 100% lift + HLE foundation
+- Closed the last stubs: register-amount shifts (`ngage_lsl/lsr/asr/ror`), ABI register
+  aliases (ip/fp/sl/sb), `ldr pc` jump tables → dispatch, goto-into-chunk fix.
+  **All 2,621 functions / 223,868 instructions lift; the whole 247k-line corpus
+  compiles under `clang -Wall` with no errors/warnings.** (Compiling the corpus caught
+  two bugs the coverage % missed — that's the real gate.)
+- **Started HLE.** Dumped the 233-slot import address table (`extract_imports.py`),
+  generated the wiring (`gen_hle.py`): each slot points to itself and dispatches to a
+  shim; unimplemented imports log their real Symbian name. First real shims
+  (`memcpy`/`memset`/`Mem::FillZ`) verified by calling `memcpy` through the game's own
+  `ldr r12,[slot]; blx r12` path — it copied correctly.
+- **Next:** EUSER heap + the `TRAP`/cleanup-stack leave model, then EFSRV reads to load
+  the `*.bin` assets, then framebuffer → first frame.
 
 ### 2026-06-12 — Day 0 (cont.): whole functions lift; firmware in hand
 - Added **control flow** to the lifter: intra-function branches → labels/`goto`,
