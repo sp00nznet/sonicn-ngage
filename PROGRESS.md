@@ -28,6 +28,17 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 
 ## Log
 
+### 2026-06-12 — Day 0 (cont.): the game advances + loads its real assets
+- Found the timing was frozen: **`User::TickCount` was a constant stub**, so the game's
+  per-frame time deltas were always 0 — animations/state transitions never advanced.
+  Implemented `TickCount` (+`User::After`) to advance one tick/frame.
+- The game now **progresses through its init states and loads its real graphics assets**:
+  `action_char4.bin` (3.6 MB chars), `action_char8.bin`, `etcdata.bin` (levels), sound —
+  all read fine through EFSRV — then runs its sprite/tile-setup code (`sub_1000B188`).
+- **Next:** the sprite-setup path hits a null-deref (an HLE gap deep in the gameplay data
+  path); fixing it is the road to recognizable graphics. Everything before it — boot, game
+  loop, asset I/O, timing, the pixel pipeline — is proven with real game code.
+
 ### 2026-06-12 — Day 0 (cont.): the recompiled game runs its render loop 🎉🎉
 - Gave the graphics objects (CFbsBitmapDevice via BITGDI ord 170, CFbsBitGc via
   CreateContext, and CFbsBitmap itself) **synthetic no-op vtables** so their virtual calls
