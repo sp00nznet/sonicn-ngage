@@ -13,14 +13,27 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 4 | First function lifted ARM→C and round-trip verified | ✅ done |
 | 4b | Control flow + stack + writeback → whole functions lift | ✅ done (100% / compiles clean) |
 | 4c | HLE foundation: IAT dispatch + first shims | ✅ done |
-| 4d | Heap allocator + new/delete + leave/cleanup-stack model | ✅ done (19/233) |
-| 5 | HLE: file reads (EFSRV) → load assets, then framebuffer + input | 🟡 next |
+| 4d | Heap allocator + new/delete + leave/cleanup-stack model | ✅ done |
+| 4e | Function registry + dispatch (game calls itself); EFSRV file reads | ✅ done (32/233) |
+| 5 | Framebuffer (NOKIAFC/BITGDI/FBSCLI) + input → first frame | 🟡 next |
 | 6 | **First frame on screen** | ⬜ |
 | 7 | Controllable Sonic | ⬜ |
 | 8 | Sound | ⬜ |
 | 9 | Playable start→first level clear | ⬜ |
 
 ## Log
+
+### 2026-06-12 — Day 0 (cont.): the game reads its own assets
+- **Function registry** (`gen_register.py`): all 2,621 lifted functions register at their
+  guest addresses; dispatch upgraded to lazily-sorted binary search. Verified the game
+  calls its own function (memset) by address through dispatch.
+- **EFSRV file reads** (`hle/efsrv.c` + `desc.c`): `RFs::Connect`, `RFile::Open`/`Read`/
+  `Size`/`Seek`/`Close` over a host-mounted root, with full Symbian descriptor decode
+  (TBufC/TPtrC/TPtr/TBuf). Verified by opening the real `volume.mbm`: size 1239 matches,
+  and 64 read bytes match the file byte-for-byte. **32/233 shims.**
+- Full integration: 2,621 game fns + runtime + HLE link into one 6.3 MB executable.
+- **Next:** the framebuffer path (NOKIAFC full-screen + BITGDI/FBSCLI) and input →
+  first frame.
 
 ### 2026-06-12 — Day 0 (cont.): heap + leave model; whole game links
 - Implemented the EUSER **heap** (`heap.c`: guest allocator) and **new/delete** shims
