@@ -12,14 +12,28 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 3 | Function recovery over the code section (2,621 funcs) | ✅ done (IDA) |
 | 4 | First function lifted ARM→C and round-trip verified | ✅ done |
 | 4b | Control flow + stack + writeback → whole functions lift | ✅ done (100% / compiles clean) |
-| 4c | HLE foundation: IAT dispatch + first shims (memcpy/memset/FillZ) | ✅ done (3/233) |
-| 5 | HLE bring-up set (heap, file read, framebuffer present, key input) | 🟡 in progress |
+| 4c | HLE foundation: IAT dispatch + first shims | ✅ done |
+| 4d | Heap allocator + new/delete + leave/cleanup-stack model | ✅ done (19/233) |
+| 5 | HLE: file reads (EFSRV) → load assets, then framebuffer + input | 🟡 next |
 | 6 | **First frame on screen** | ⬜ |
 | 7 | Controllable Sonic | ⬜ |
 | 8 | Sound | ⬜ |
 | 9 | Playable start→first level clear | ⬜ |
 
 ## Log
+
+### 2026-06-12 — Day 0 (cont.): heap + leave model; whole game links
+- Implemented the EUSER **heap** (`heap.c`: guest allocator) and **new/delete** shims
+  (`CBase::operator new` zeroed, `User::AllocL`, `operator new[]`/`delete`), plus the
+  **leave / cleanup-stack** machinery (`kernel.c`: setjmp/longjmp trap + cleanup stack)
+  and `LeaveIfError`/`Trap`/`UnTrap`/`CleanupStack::*`/`Exit`/`Panic`. **19/233 shims.**
+- Verified: alloc/free/reuse; a `LeaveIfError(-4)` deep in a call unwinds through
+  `ngage_run`, runs cleanup (frees the pushed block), returns the code.
+- **Whole-program proof:** all 2,621 lifted functions + runtime + HLE link into one
+  6.2 MB executable that runs its init path (heap + wiring all 233 imports).
+- Honest note: nested guest `TRAP` recovery still routes leaves to the outermost
+  handler (needs an inline setjmp at the TRAP call site, a lifter hook) — fine for the
+  happy path. **Next:** EFSRV file reads to load SonicN's `*.bin` assets.
 
 ### 2026-06-12 — Day 0 (cont.): 100% lift + HLE foundation
 - Closed the last stubs: register-amount shifts (`ngage_lsl/lsr/asr/ror`), ABI register
