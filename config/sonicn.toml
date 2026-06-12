@@ -1,0 +1,17 @@
+# NGageRecomp configuration for SonicN.
+# Mirrors ngagerecomp/config/sonicn.toml; this is the canonical copy for the port.
+
+[input]
+image = "game/system/apps/sonicn/sonicn.app"
+uid3  = 0x101FB882
+cpu   = "armv4"
+
+[output]
+dir   = "out/"
+
+[functions]
+# entry = 0x........   # filled after the full header parse (Milestone 1)
+# hints = []
+
+[sections]
+# none known yet

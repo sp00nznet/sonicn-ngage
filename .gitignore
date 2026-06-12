@@ -1,0 +1,30 @@
+# NEVER commit the game — bring your own legally-obtained dump.
+/game/system/
+/game/**/*.app
+/game/**/*.bin
+/game/**/*.mbm
+/game/**/*.rsc
+/game/**/*.aif
+*.app
+*.bin
+*.mbm
+*.rsc
+*.aif
+*.sis
+*.zip
+game.id
+nokia.dat
+
+# Recompiler / build output
+/build/
+/out/
+/generated/
+*.o
+*.obj
+*.exe
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
