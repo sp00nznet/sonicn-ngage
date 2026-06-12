@@ -10,7 +10,7 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 1 | Full header parse (sections, imports, relocs, entry point) | ✅ done (IDA EPOC loader) |
 | 2 | Import table dumped → exact Symbian symbol list (233 / 11 DLLs) | ✅ done |
 | 3 | Function recovery over the code section (2,621 funcs) | ✅ done (IDA) |
-| 4 | First function lifted ARM→C and round-trip verified | ⬜ |
+| 4 | First function lifted ARM→C and round-trip verified | ✅ done |
 | 5 | HLE bring-up set (heap, file read, framebuffer present, key input) | ⬜ |
 | 6 | **First frame on screen** | ⬜ |
 | 7 | Controllable Sonic | ⬜ |
@@ -18,6 +18,17 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 9 | Playable start→first level clear | ⬜ |
 
 ## Log
+
+### 2026-06-12 — Day 0 (cont.): first ARM→C lift round-trips ✅
+- Built the lifter in [ngagerecomp](https://github.com/sp00nznet/ngagerecomp): `extract.py`
+  (IDA bridge → functions + segment bytes) and `lift.py` (Capstone ARM→C, no license).
+- Lifted SonicN's `sub_1000BD34` (ldr-literal / mov / strh / bx lr) to C; it compiles
+  under `clang -Wall` and executes correctly — the halfword store lands at `r0+0x29a`.
+  PC-relative literal-pool loads are folded to constants from the image. **Milestone 4 done.**
+- Coverage on the ≤200B function set (1,270 funcs): **70% of instructions**, **27% of
+  functions** lift with zero stubs. Top gaps = branches/calls, then push/pop/ldm/stm.
+- **Next:** control flow (intra-function branches as labels, calls via dispatch) so
+  whole non-leaf functions lift; then trace the framebuffer path.
 
 ### 2026-06-12 — Day 0 (cont.): IDA does the front end for free
 - IDA Professional 9.1 (headless idalib) loads `sonicn.app` via its EPOC loader:
