@@ -27,6 +27,20 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 
 ## Log
 
+### 2026-06-12 — Day 0 (cont.): blew through the audio AO into control ConstructL
+- The active object was a **`CMdaAudioOutputStream`** (audio). Implemented it as an HLE
+  object with a synthetic no-op vtable (`ngagerecomp` `hle/media.c`) → past the panic.
+- Then found **two more real lifter bugs** by running real code (both affect any game):
+  - **scaled index dropped**: `ldr r0,[r6,r5,lsl #2]` emitted `r6+r5` (Capstone puts the
+    shift on the operand, not `mem.lshift`). Hit on array indexing.
+  - **ARMv4 indirect call as tail-return**: `mov lr,pc; bx ip` was lifted as `…;return;`,
+    skipping the epilogue that restores r4–r11. Added an **ABI-invariant check** to the
+    dispatcher (flags any callee that alters r4–r11/sp) which pinpointed it instantly.
+- Result: the boot now runs through the entire audio AO + the 538 KB sub-object construction
+  and into the **control's `ConstructL` (`sub_10016990`)**, which creates the game's
+  `CFbsBitmap`s. Next fault there is an HLE gap (a null graphics object), not a lifter bug.
+  **89/233 shims.**
+
 ### 2026-06-12 — Day 0 (cont.): isolated the active-object frontier
 - Fixed another real bug: **`TTrap::Trap` wasn't writing `*aResult`**, so `TRAPD` loops saw
   a non-zero error and retried forever. Now sets `KErrNone`.
