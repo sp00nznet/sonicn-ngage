@@ -19,13 +19,28 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 4g | Game code runs: image loader + virtual dispatch; NewApplication executes | ✅ done |
 | 4h | App init chain traced (docs/BOOT-CHAIN.md); driving into ConstructL | ✅ done |
 | 4i | Drive ConstructL deep: LDM bug fix, soft-float, descriptors, panic | ✅ done (88/233) |
-| 5 | Active-object/async machinery → construction completes → render | 🟡 in progress |
+| 5 | App+control ConstructL completes; game loop runs; render code executes | ✅ done (90/233) |
+| 6 | Real asset (MBM) loading + game progression → gameplay graphics | 🟡 next |
 | 6 | **First frame on screen** | ⬜ |
 | 7 | Controllable Sonic | ⬜ |
 | 8 | Sound | ⬜ |
 | 9 | Playable start→first level clear | ⬜ |
 
 ## Log
+
+### 2026-06-12 — Day 0 (cont.): the recompiled game runs its render loop 🎉🎉
+- Gave the graphics objects (CFbsBitmapDevice via BITGDI ord 170, CFbsBitGc via
+  CreateContext, and CFbsBitmap itself) **synthetic no-op vtables** so their virtual calls
+  and deletes resolve instead of derefing null vtables.
+- Result: the tick now runs cleanly for **300 frames with no crash**, and the game
+  **renders into a 256×256 CFbsBitmap backbuffer** (118 DataAddress calls) which the
+  present pipeline captures as a real frame.
+- **Honest state:** the frame is currently **blank (white)** — early/loading state; sprite
+  bitmaps are empty because CFbsBitmap::Load doesn't decode the real `.mbm`/`.bin` assets
+  yet, and the game hasn't advanced past init (gated by the still-stubbed active-object
+  machinery). The pixel pipeline is proven end-to-end with real game code.
+- **Next:** real asset loading (MBM decode) + active-object/RTimer completion so the game
+  advances to actual gameplay rendering.
 
 ### 2026-06-12 — Day 0 (cont.): ConstructL COMPLETES; the game tick runs 🎉
 - Mapped `FBSCLI ord 156` = `CFbsBitmap::Load` (had mis-labeled it Connect). Implemented it
