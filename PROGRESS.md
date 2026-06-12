@@ -14,14 +14,28 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 | 4b | Control flow + stack + writeback → whole functions lift | ✅ done (100% / compiles clean) |
 | 4c | HLE foundation: IAT dispatch + first shims | ✅ done |
 | 4d | Heap allocator + new/delete + leave/cleanup-stack model | ✅ done |
-| 4e | Function registry + dispatch (game calls itself); EFSRV file reads | ✅ done (32/233) |
-| 5 | Framebuffer (NOKIAFC/BITGDI/FBSCLI) + input → first frame | 🟡 next |
+| 4e | Function registry + dispatch (game calls itself); EFSRV file reads | ✅ done |
+| 4f | Framebuffer pipeline: CFbsBitmap + DataAddress + present (45/233) | ✅ done |
+| 5 | S60 app bootstrap (active scheduler + CONE) → game's own Draw runs | 🟡 next |
 | 6 | **First frame on screen** | ⬜ |
 | 7 | Controllable Sonic | ⬜ |
 | 8 | Sound | ⬜ |
 | 9 | Playable start→first level clear | ⬜ |
 
 ## Log
+
+### 2026-06-12 — Day 0 (cont.): pixels flow — the framebuffer pipeline works
+- Mapped SonicN's render path from its imports: it creates a **CFbsBitmap**, gets its
+  raw buffer via **DataAddress()**, software-renders into it, then flips via **NOKIAFC**
+  (BITGDI has no draw calls imported → the game does its own pixels).
+- Built it: `hle/fbserv.c` (CFbsBitmap Create/DataAddress/SizeInPixels/DisplayMode/
+  Header, BitGc stubs, NOKIAFC flip) + `framebuffer.c` (EColor4K/64K/Gray256/16MU →
+  RGB888 presenter, DWORD-aligned scanlines). **45/233 shims.**
+- Verified the pipeline end-to-end: created a 176×208 EColor64K bitmap via the HLE,
+  software-rendered an RGB565 gradient into DataAddress(), flipped → a correct image
+  (see ngagerecomp `docs/pixel-pipeline-proof.png`). Whole program still links.
+- Honest scope: this proves the *pipeline*; SonicN's own draw code only runs after the
+  **S60 app framework boots** (active scheduler + CONE/EIKCORE/AVKON) — the next block.
 
 ### 2026-06-12 — Day 0 (cont.): the game reads its own assets
 - **Function registry** (`gen_register.py`): all 2,621 lifted functions register at their
