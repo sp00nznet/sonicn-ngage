@@ -46,9 +46,33 @@ Implications:
   `E32Dll` path, not a flat `main` — the recompiler/HLE must model the Series 60 app
   framework startup, not just jump to an entry point.
 
+## IDA analysis (Professional 9.1, headless idalib)
+
+IDA's built-in **EPOC/E32Image loader** parses the `.app` directly — no custom
+front end needed. Results:
+
+- **2,621 functions** recovered.
+- Entry points: `0x100163bc` (`sonicn_1` = the exported `NewApplication()`),
+  `0x10000000` (`start`).
+- `NewApplication()` decompiles cleanly via Hex-Rays:
+  ```c
+  _DWORD *sonicn_1() {
+    int v0 = _nw__5CBaseUi(556);      // operator new(556)
+    if (v0) { _15CEikApplication(v0); // CEikApplication ctor
+              *(_DWORD*)v0 = dword_1014EF30; }   // vtable
+    return (_DWORD*)v0;
+  }
+  ```
+  → confirms the standard S60 polymorphic-DLL app startup (`CEikApplication`
+  subclass), and that the ARM→C decompile path works as a recomp oracle.
+- **Import table: 233 symbols across 11 DLLs**, ordinals already demangled to SDK
+  signatures. Full worklist in [`HLE-IMPORTS.md`](HLE-IMPORTS.md). Headline breakdown:
+  EUSER 78 · EIKCORE 55 · CONE 46 · AVKON 19 · EFSRV 13 · FBSCLI 7 · BITGDI 6 ·
+  APPARC 4 · ESTLIB 3 · NOKIAFC 1 · MEDIACLIENTAUDIOSTREAM 1.
+
 ## Next data to gather
 
-- [ ] Full header parse: code size, data size, export count, **import table**, relocation tables, entry point.
-- [ ] Import table dump → `(DLL, ordinal)` list → maps to the [Symbian HLE](https://github.com/sp00nznet/ngagerecomp/blob/main/docs/SYMBIAN-HLE.md) surface.
-- [ ] Thumb vs ARM region map.
+- [ ] Thumb vs ARM region map across the code section.
+- [ ] Map the framebuffer path (NOKIAFC + BITGDI + FBSCLI) to a concrete present call.
 - [ ] `images.mbm` / `volume.mbm` decode (standard Symbian MBM).
+- [ ] Cross-check a handful of Hex-Rays decompilations against EKA2L1 behavior.
