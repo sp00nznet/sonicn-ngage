@@ -27,6 +27,18 @@ Newest entries on top. Milestones tracked toward **first frame**, then **playabl
 
 ## Log
 
+### 2026-06-12 — Day 0 (cont.): isolated the active-object frontier
+- Fixed another real bug: **`TTrap::Trap` wasn't writing `*aResult`**, so `TRAPD` loops saw
+  a non-zero error and retried forever. Now sets `KErrNone`.
+- Upgraded the debugger from a recency ring to a **true call stack** (`ngage_stack` /
+  `ngage_calldepth`), and made `User::Panic` print the caller→callee chain.
+- With it, isolated the exact frontier: a `CActive`-derived **active object** built in
+  `sub_10018D4C` inside a `TRAP` retry loop; its teardown reaches `RunL` (`sub_100EB58C`)
+  with the wrong state → panic. Full chain documented in `docs/BOOT-CHAIN.md`.
+- Verdict: this needs a **real active-object runtime** (Cancel→DoCancel, request/complete,
+  RunL-on-completion) + the nested-`TRAP` lifter hook — the next substantial, design-heavy
+  block. Everything downstream (CPeriodic tick → render → framebuffer) is already built.
+
 ### 2026-06-12 — Day 0 (cont.): driving ConstructL deep — found a real lifter bug
 - Ran `AppUi::ConstructL` under a memory-bounds guard. It surfaced a wild read at
   `0x3FE00004`, which a 32-entry dispatch call-trace pinned to **a lifter bug**:

@@ -44,9 +44,32 @@ game tick                                sub_100170D8  → sub_10017260   (updat
 - Implemented along the way: `CPeriodic::NewL`/`Start` + a pump, `ApplicationRect`,
   the descriptor constructors (TPtr/TPtrC/TBuf), and the active-scheduler no-ops.
 
+## Frontier: an active-object lifecycle (sub_10018D4C)
+
+One of the control's sub-constructors builds an **active object** (a `CActive`-derived
+43488-byte object) inside a `TRAP`-guarded retry loop and operates on it. With the
+scheduler stubbed, its state machine doesn't advance and a teardown path reaches `RunL`
+with the wrong state, hitting `User::Panic` (reason 1). True call chain at the panic:
+
+```
+ConstructL → sub_10018D4C → sub_100E7A10 → sub_100E7A58 → sub_100EB28C
+  → sub_100ED7B0 → sub_100EB760 → sub_100E876C   (TRAP retry loop)
+  → sub_100EB1F8 (active-object dtor) → sub_100ED7A8 → sub_100EB58C (RunL) → Panic
+```
+
+`sub_100E876C` is `TRAPD(err, { obj = new …; }); if(!err) TRAPD(err, sub_100EB28C(obj)); while(err);`
+— a construct-then-operate retry. `sub_100EB58C` is the active object's `RunL`: it
+asserts `*(this+32) == 1` (the request was issued) before advancing the state to 2.
+
+Reaching this needs a **real active-object runtime**: `CActive::Cancel`→`DoCancel`,
+request issue/complete, and a run loop that dispatches `RunL` only on completion — plus
+the nested-`TRAP` lifter hook (the retry loop relies on its own `TRAP` catching leaves).
+That's the next substantial block; the rest of the pipeline below it (the `CPeriodic`
+tick → render → framebuffer) is already in place.
+
 ## Tooling note
 
-The dispatcher keeps a 32-entry call-trace ring (`ngage_trace`) so a fault prints the
-last guest addresses dispatched — that's how each crash site is located. The current
-frontier is inside `sub_10016990` (control construction) using a buffer that an upstream
-stub hasn't populated yet.
+Bring-up uses two debug facilities in the runtime (`-DNGAGE_MEM_GUARD`): a guest-memory
+bounds reporter, and a real **call stack** (`ngage_stack`/`ngage_calldepth` in
+`dispatch.c`) that prints the caller→callee chain at a fault or panic — how the chain
+above was recovered. A 32-entry trace ring and a runaway-recursion guard round it out.
